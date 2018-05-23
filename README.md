@@ -75,7 +75,6 @@ Note, we don't really have to calculate the rotation matrix `Rbg`, and rotate th
 
 ![covariance2](images/predict_covariance.png)
 
-
 ### Step 4: Magnetometer Update ###
 
 1. Implement magnetometer update function `UpdateFromMag()` as described in **7.3.2 Magnetometer**:
@@ -84,10 +83,14 @@ Note, we don't really have to calculate the rotation matrix `Rbg`, and rotate th
   hPrime(0,6) = 1;
   zFromX(0) = ekfState(6);
 ```
-then normalize the difference between your measured and estimated yaw
+then normalize the difference between measured and estimated yaw
+```
+  //Normalize
+  if ( z(0)-ekfState(6) > F_PI) z(0) -= 2.f*F_PI;
+  if ( z(0)-ekfState(6) < -F_PI) z(0) += 2.f*F_PI;
+```
 2. Tune `QYawStd` parameter:
 ![mag_update](images/mag_result.png)
-
 
 ### Step 5: Closed Loop + GPS Update ###
 
@@ -98,13 +101,13 @@ then normalize the difference between your measured and estimated yaw
   zFromX = ekfState.head(6);
 ```
 2. Run with default controller:
-
-
+![original](images/original.png)
 
 ### Step 6: Adding Your Controller ###
 
 1. Replace `QuadController.cpp` and `QuadControlParams.txt` with the controller / params from the last project.
+![non-relaxed](images/non-relaxed.png)
 
-2. Tune the gains in `QuadControlParams.txt`
-
+2. Relax the gains in `QuadControlParams.txt`, so the path is smooth:
+![result](images/final.png)
 
