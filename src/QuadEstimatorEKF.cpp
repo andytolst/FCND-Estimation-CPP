@@ -92,9 +92,10 @@ void QuadEstimatorEKF::UpdateFromIMU(V3F accel, V3F gyro)
 
   Quaternion<float> qt = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, ekfState(6));
   V3D predictedRPY = qt.IntegrateBodyRate(gyro, dtIMU).ToEulerRPY();
-  float predictedPitch = predictedRPY.y;
-  float predictedRoll = predictedRPY.x;
-  ekfState(6) = predictedRPY.z;
+
+  float predictedPitch = predictedRPY.y; // Pitch
+  float predictedRoll = predictedRPY.x; // Roll
+  ekfState(6) = predictedRPY.z; // Yaw
 
   // normalize yaw to -pi .. pi
   if (ekfState(6) > F_PI) ekfState(6) -= 2.f*F_PI;

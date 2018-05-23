@@ -10,7 +10,7 @@ This is the implementation of FCND Estimation project.
 
 3. Put results to `config/6_Sensornoise.txt`
 
-4. Run simulator ans check the result:
+4. Run simulator and check the result:
 ![sensor noise](images/sensor_noise.png)
 
 
@@ -21,10 +21,23 @@ This is the implementation of FCND Estimation project.
 ![quaternion](images/quaternion.png)
 
 - create a quaternion `qt` from Euler angles using `FromEuler123_RPY` function:
-   `Quaternion<float> qt = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, ekfState(6))`
+```
+ Quaternion<float> qt = Quaternion<float>::FromEuler123_RPY(rollEst, pitchEst, ekfState(6))
+```
 - use `IntegrateBodyRate()` function (which is just multiplication of 2 quaternions) to integrate gyro rate
-- use `ToEulerRPY()` to convert resulting quaternion to Euler angles Roll, Pitch and Yaw
+- use `ToEulerRPY()` to convert resulting quaternion back to Euler angles Roll, Pitch and Yaw
+```
+  V3D predictedRPY = qt.IntegrateBodyRate(gyro, dtIMU).ToEulerRPY();
+  float predictedPitch = predictedRPY.y; // Pitch
+  float predictedRoll = predictedRPY.x; // Roll
+  ekfState(6) = predictedRPY.z; // Yaw
+```
 - normalize yaw to -pi .. pi
+```
+  // normalize yaw to -pi .. pi
+  if (ekfState(6) > F_PI) ekfState(6) -= 2.f*F_PI;
+  if (ekfState(6) < -F_PI) ekfState(6) += 2.f*F_PI;
+```
 - the rest of the code (already implemented) completes the filter:
 ![filter](images/roll_pitch_filter.png)
  
@@ -37,8 +50,8 @@ This is the implementation of FCND Estimation project.
 1. Implement the state prediction step in the `PredictState()` functon as described in **7.2 Transition Model**:
 ![predict](images/predict.png)
 taking into account that control vector `ut` is x,y,z accelerations in body frame + Yaw rate:
-![ut](images/conrol_vector.png)
-Note, we don't really have to calculate the rotation matrix `Rbg`, and rotate the first part of control vector `ut` using `Rotate_BtoI()` function of the attitude quaternion.
+![ut](images/control_vector.png)
+Note, we don't really have to calculate the rotation matrix `Rbg`, just rotate the accelerations part of control vector `ut` using `Rotate_BtoI()` function of the attitude quaternion.
 ```
   // X,Y,Z
   predictedState[0] = predictedState[0] + predictedState[3] * dt;
@@ -51,6 +64,7 @@ Note, we don't really have to calculate the rotation matrix `Rbg`, and rotate th
   predictedState[4] = predictedState[4] + accelXYZ.y * dt;
   predictedState[5] = predictedState[5] - CONST_GRAVITY * dt + accelXYZ.z * dt;
 ```
+Note, there is no need to update `predictedState[6]` as it was updated at the previous step.
 
 2. Implement function `GetRbgPrime()`, just fill coefficients as following:
 ![rbgprime](images/rbgprime.png)
@@ -86,8 +100,8 @@ Note, we don't really have to calculate the rotation matrix `Rbg`, and rotate th
 then normalize the difference between measured and estimated yaw
 ```
   //Normalize
-  if ( z(0)-ekfState(6) > F_PI) z(0) -= 2.f*F_PI;
-  if ( z(0)-ekfState(6) < -F_PI) z(0) += 2.f*F_PI;
+  if (z(0)-ekfState(6) > F_PI) z(0) -= 2.f*F_PI;
+  if (z(0)-ekfState(6) < -F_PI) z(0) += 2.f*F_PI;
 ```
 2. Tune `QYawStd` parameter:
 ![mag_update](images/mag_result.png)
